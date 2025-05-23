@@ -214,11 +214,11 @@ class GameScreen:
                 return
 
 
-         board_state = self.chess_logic.get_board_state()
+        board_state = self.chess_logic.get_board_state()
             
-            # print(f"DEBUG: AI ({self.current_active_player_object.name}) commence à réfléchir...") # Optional
-            self.stockfish_adapter.request_ai_move(board_state, time_limit_ms=2000) # Using 2 seconds
-            self.is_ai_thinking = True
+        # print(f"DEBUG: AI ({self.current_active_player_object.name}) commence à réfléchir...") # Optional
+        self.stockfish_adapter.request_ai_move(board_state, time_limit_ms=2000) # Using 2 seconds
+        self.is_ai_thinking = True
 
 
     def _check_game_end_condition(self):
