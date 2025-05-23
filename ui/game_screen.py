@@ -1,7 +1,7 @@
 import pygame
 import chess
-import time # Added for AI move delay
-import config 
+import config
+import time # Added for AI move delay 
 from game_logic.chess_board import ChessBoardLogic
 from game_logic.player import Player
 from .components.board_display import BoardDisplay
@@ -213,11 +213,13 @@ class GameScreen:
                 print("Tentative de coup IA sans moteur Stockfish actif.")
                 return
 
-            board_state = self.chess_logic.get_board_state()
+
+         board_state = self.chess_logic.get_board_state()
             
             # print(f"DEBUG: AI ({self.current_active_player_object.name}) commence à réfléchir...") # Optional
             self.stockfish_adapter.request_ai_move(board_state, time_limit_ms=2000) # Using 2 seconds
             self.is_ai_thinking = True
+
 
     def _check_game_end_condition(self):
         if self.chess_logic.is_game_over() and not self.game_over_popup_active:

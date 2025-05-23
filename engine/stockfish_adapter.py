@@ -76,6 +76,7 @@ class StockfishAdapter:
             print("ATTENTION: Stockfish non initialisé, analyse impossible.")
             return
 
+
         # If a thread object exists from a previous call and is dead, join it.
         if self.analysis_thread:
             if not self.analysis_thread.is_alive():
@@ -88,6 +89,7 @@ class StockfishAdapter:
         if self.analysis_thread and self.analysis_thread.is_alive():
             # print("DEBUG: Analysis thread still alive, new analysis request ignored.")
             return # Previous analysis is still running, do nothing.
+
 
         # Vider la queue des résultats précédents
         while not self.analysis_queue.empty():
