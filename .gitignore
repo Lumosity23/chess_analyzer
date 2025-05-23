@@ -1,0 +1,39 @@
+# Fichiers et dossiers Python spécifiques
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+env/
+.env
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers IDE (exemples, ajoute ceux de ton IDE si besoin)
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Dossier Stockfish (si tu ne veux pas versionner l'exécutable directement)
+# Si tu veux que les autres clonent et doivent télécharger Stockfish eux-mêmes :
+# stockfish/stockfish  # Pour Linux/macOS
+# stockfish/stockfish.exe # Pour Windows
+# Ou si tu veux inclure l'exécutable, ne mets pas ces lignes.
+# Pour un projet personnel, inclure un petit exécutable est souvent OK.
+# Pour un gros projet open source, on demanderait aux utilisateurs de le fournir.
+
+# Fichiers MP3 des sons (si tu ne veux pas les versionner car trop gros ou copyright)
+# Si tu les as récupérés de chess.com, il peut y avoir des questions de droits.
+# Pour un projet personnel pour apprendre, c'est généralement OK, mais sois conscient.
+# Si tu veux les exclure :
+# assets/sounds/*.mp3
+# Ou si le dossier s'appelle 'sounds' directement à la racine :
+# sounds/*.mp3
