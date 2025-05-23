@@ -13,6 +13,9 @@ class StockfishAdapter:
         self.analysis_thread = None
         self.analysis_queue = queue.Queue() # Pour récupérer les résultats de l'analyse
         self.current_analysis_info = None   # Stocke la dernière info d'analyse complète
+        
+        self.ai_move_queue = queue.Queue(maxsize=1)
+        self.ai_move_thread = None # To store the thread for AI move calculation
 
         try:
             if not os.path.exists(config.STOCKFISH_PATH):
@@ -73,16 +76,20 @@ class StockfishAdapter:
             print("ATTENTION: Stockfish non initialisé, analyse impossible.")
             return
 
-        # If a thread object exists from a previous call
+
+        # If a thread object exists from a previous call and is dead, join it.
         if self.analysis_thread:
-            if self.analysis_thread.is_alive():
-                # print("DEBUG: Analysis thread still alive, new analysis request ignored.")
-                return # Previous analysis is still running, do nothing.
-            #else:
+            if not self.analysis_thread.is_alive():
                 # Previous thread existed but is dead, try to join it to ensure cleanup.
                 # print("DEBUG: Previous analysis thread found dead, joining...")
-                #self.analysis_thread.join(timeout=0.2) # Wait up to 0.2s for it to clean up.
-                                                      # Adjust timeout as needed, or remove if problematic. 
+                self.analysis_thread.join(timeout=0.2) # Wait up to 0.2s
+                self.analysis_thread = None # Set to None after join for a clean state
+
+        # If an analysis is already running (could be the same thread object if join timed out or new one started fast)
+        if self.analysis_thread and self.analysis_thread.is_alive():
+            # print("DEBUG: Analysis thread still alive, new analysis request ignored.")
+            return # Previous analysis is still running, do nothing.
+
 
         # Vider la queue des résultats précédents
         while not self.analysis_queue.empty():
@@ -127,6 +134,64 @@ class StockfishAdapter:
         except Exception as e:
             print(f"ERREUR: lors de la demande du meilleur coup à Stockfish: {e}")
             return None
+
+    def _calculate_ai_move_in_background(self, board_fen: str, time_limit_ms: int):
+        if not self.engine:
+            self.ai_move_queue.put(None)
+            return
+
+        try:
+            # Create a new board instance for the thread
+            thread_board = chess.Board(fen=board_fen)
+            # Call the existing synchronous method to get the best move
+            # Note: get_best_move_from_engine expects a board object.
+            move = self.get_best_move_from_engine(thread_board, time_limit_ms=time_limit_ms)
+            self.ai_move_queue.put(move)
+        except Exception as e:
+            print(f"ERREUR: Exception dans le thread de calcul de coup IA: {e}")
+            self.ai_move_queue.put(None) # Ensure queue gets something to unblock getter
+
+    def request_ai_move(self, board: chess.Board, time_limit_ms: int):
+        if not self.engine:
+            print("ATTENTION: Stockfish non initialisé, calcul de coup IA impossible.")
+            # Optionally, put None in queue if GameScreen expects a response
+            # self.ai_move_queue.put(None) 
+            return
+
+        # Manage previous ai_move_thread (similar to analysis_thread)
+        if self.ai_move_thread:
+            if not self.ai_move_thread.is_alive():
+                self.ai_move_thread.join(timeout=0.1) # Short timeout for cleanup
+                self.ai_move_thread = None
+            else:
+                # An AI move calculation is already in progress
+                print("DEBUG: Calcul de coup IA précédent toujours en cours.")
+                return 
+
+        # Clear the queue before starting a new request
+        while not self.ai_move_queue.empty():
+            try:
+                self.ai_move_queue.get_nowait()
+            except queue.Empty:
+                break
+        
+        board_fen = board.fen()
+        self.ai_move_thread = threading.Thread(
+            target=self._calculate_ai_move_in_background,
+            args=(board_fen, time_limit_ms)
+        )
+        self.ai_move_thread.daemon = True
+        self.ai_move_thread.start()
+        # print(f"DEBUG: Thread de calcul de coup IA démarré pour FEN: {board_fen}") # Optional
+
+    def get_completed_ai_move(self) -> chess.Move | None:
+        try:
+            move = self.ai_move_queue.get_nowait() # Non-blocking
+            # print(f"DEBUG: Coup récupéré de la queue IA: {move}") # Optional
+            return move
+        except queue.Empty:
+            # print("DEBUG: Queue de coup IA vide.") # Optional
+            return None # No move ready yet
 
     def close(self):
         """Arrête proprement le moteur Stockfish."""
