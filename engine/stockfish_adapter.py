@@ -54,7 +54,10 @@ class StockfishAdapter:
             
             # Mettre le résultat (la dernière info de la ligne principale) dans la queue
             # 'info' contient 'score', 'pv' (meilleure variante), 'depth', etc.
-            self.analysis_queue.put(info)
+            if info: # Ensure info is not None
+                self.analysis_queue.put(info.copy()) # Put a copy of the info dictionary
+            else:
+                self.analysis_queue.put(None) # Or handle as an error/no result
             
         except chess.engine.EngineTerminatedError:
             print("ERREUR: Le moteur Stockfish s'est terminé de manière inattendue pendant l'analyse.")
@@ -70,12 +73,16 @@ class StockfishAdapter:
             print("ATTENTION: Stockfish non initialisé, analyse impossible.")
             return
 
-        # Si une analyse est déjà en cours, on pourrait l'arrêter ou l'ignorer
-        if self.analysis_thread and self.analysis_thread.is_alive():
-            # print("DEBUG: Analyse précédente toujours en cours, nouvelle analyse ignorée ou en attente.")
-            # Pour une version simple, on ne lance pas une nouvelle si une est en cours.
-            # Pour une version plus avancée, on pourrait tuer l'ancien thread ou utiliser une gestion plus fine.
-            return 
+        # If a thread object exists from a previous call
+        if self.analysis_thread:
+            if self.analysis_thread.is_alive():
+                # print("DEBUG: Analysis thread still alive, new analysis request ignored.")
+                return # Previous analysis is still running, do nothing.
+            #else:
+                # Previous thread existed but is dead, try to join it to ensure cleanup.
+                # print("DEBUG: Previous analysis thread found dead, joining...")
+                #self.analysis_thread.join(timeout=0.2) # Wait up to 0.2s for it to clean up.
+                                                      # Adjust timeout as needed, or remove if problematic. 
 
         # Vider la queue des résultats précédents
         while not self.analysis_queue.empty():

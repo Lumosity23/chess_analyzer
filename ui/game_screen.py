@@ -1,6 +1,7 @@
 import pygame
 import chess
-import config 
+import config
+import time # Added for AI move delay 
 from game_logic.chess_board import ChessBoardLogic
 from game_logic.player import Player
 from .components.board_display import BoardDisplay
@@ -210,15 +211,18 @@ class GameScreen:
         board_state = self.chess_logic.get_board_state()
         # Utiliser une limite de temps plus courte pour que l'IA joue rapidement
         # ou utiliser les paramètres de difficulté de Stockfish si configurés.
-        best_move = self.stockfish_adapter.get_best_move_from_engine(board_state, time_limit_ms=500) # 0.5s pour jouer
+        best_move = self.stockfish_adapter.get_best_move_from_engine(board_state, time_limit_ms=2000) # Changed to 2 seconds
 
+        #time.sleep(1) # Add 1-second delay before processing the move
         if best_move:
             is_capture = self.chess_logic.get_board_state().is_capture(best_move)
             is_castling = self.chess_logic.get_board_state().is_castling(best_move)
             is_promotion = best_move.promotion is not None # Vérifier si c'est une promotion
 
             if self.chess_logic.apply_move(best_move):
-                print(f"IA ({self.current_active_player_object.name}) joue: {board_state.san(best_move)}")
+                # The SAN is generated and stored by apply_move, so we retrieve it from the history.
+                move_san = self.chess_logic.get_move_history_san()[-1] 
+                print(f"IA ({self.current_active_player_object.name}) joue: {move_san}")
                 # Sons pour l'IA (on pourrait utiliser "move_opponent")
                 if is_promotion: config.play_sound("promote")
                 elif is_castling: config.play_sound("castle")

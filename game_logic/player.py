@@ -15,6 +15,8 @@ class Player:
         """
         Décrémente le temps du joueur.
         """
+        if self.time_left_ms == float('inf'):
+            return  # Do nothing if time is infinite
         if not self.is_timed_out:
             self.time_left_ms -= delta_ms
             if self.time_left_ms <= 0:
@@ -26,6 +28,8 @@ class Player:
         """
         Retourne le temps restant formaté en 'MM:SS.d' (minutes:secondes.dixiemes).
         """
+        if self.time_left_ms == float('inf'):
+            return "∞" # Or use "--:--" if preferred, but "∞" is more standard.
         if self.is_timed_out:
             return "00:00.0"
 
