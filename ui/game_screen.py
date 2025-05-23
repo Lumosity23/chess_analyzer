@@ -1,5 +1,6 @@
 import pygame
 import chess
+import time # Added for AI move delay
 import config 
 from game_logic.chess_board import ChessBoardLogic
 from game_logic.player import Player
@@ -60,6 +61,10 @@ class GameScreen:
         self.game_over_message_text = ""
         self.popup_buttons = []
         self.main_app_ref = None
+
+        self.is_ai_thinking = False
+        self.pending_ai_move_object = None # To store the move from Stockfish
+        self.ai_move_ready_to_apply_time = None # To track when the 1s post-thinking delay starts
 
     def set_main_app_ref(self, main_app_ref):
         self.main_app_ref = main_app_ref
@@ -203,42 +208,16 @@ class GameScreen:
             return self.player_black_type == config.OPPONENT_AI_STOCKFISH
 
     def _ai_play_move(self):
-        if not self.stockfish_adapter or not self.stockfish_adapter.engine:
-            print("Tentative de coup IA sans moteur Stockfish actif.")
-            return
+        if not self.is_ai_thinking: # Only request if not already thinking
+            if not self.stockfish_adapter or not self.stockfish_adapter.engine:
+                print("Tentative de coup IA sans moteur Stockfish actif.")
+                return
 
-        board_state = self.chess_logic.get_board_state()
-        # Utiliser une limite de temps plus courte pour que l'IA joue rapidement
-        # ou utiliser les paramètres de difficulté de Stockfish si configurés.
-        best_move = self.stockfish_adapter.get_best_move_from_engine(board_state, time_limit_ms=500) # 0.5s pour jouer
-
-        if best_move:
-            is_capture = self.chess_logic.get_board_state().is_capture(best_move)
-            is_castling = self.chess_logic.get_board_state().is_castling(best_move)
-            is_promotion = best_move.promotion is not None # Vérifier si c'est une promotion
-
-            if self.chess_logic.apply_move(best_move):
-                print(f"IA ({self.current_active_player_object.name}) joue: {board_state.san(best_move)}")
-                # Sons pour l'IA (on pourrait utiliser "move_opponent")
-                if is_promotion: config.play_sound("promote")
-                elif is_castling: config.play_sound("castle")
-                elif is_capture: config.play_sound("capture")
-                else: config.play_sound("move_opponent") # Son différent pour l'IA
-                
-                if self.chess_logic.is_in_check():
-                    config.play_sound("check")
-                
-                # Mettre à jour le joueur actif et relancer l'analyse pour le joueur humain (ou l'autre IA)
-                self.current_active_player_object = self.player_black if self.chess_logic.get_current_player_color() == chess.BLACK else self.player_white
-                self.last_tick_time = pygame.time.get_ticks()
-                if self.stockfish_adapter and self.stockfish_adapter.engine:
-                    self.stockfish_adapter.start_analysis(self.chess_logic.get_board_state())
-                self._check_game_end_condition() # Vérifier si la partie est finie après le coup de l'IA
-            else:
-                print(f"ERREUR: L'IA a tenté un coup illégal: {best_move}")
-        else:
-            print("ERREUR: L'IA (Stockfish) n'a pas retourné de coup.")
-            # Potentiellement mat ou pat, ou erreur moteur
+            board_state = self.chess_logic.get_board_state()
+            
+            # print(f"DEBUG: AI ({self.current_active_player_object.name}) commence à réfléchir...") # Optional
+            self.stockfish_adapter.request_ai_move(board_state, time_limit_ms=2000) # Using 2 seconds
+            self.is_ai_thinking = True
 
     def _check_game_end_condition(self):
         if self.chess_logic.is_game_over() and not self.game_over_popup_active:
@@ -357,8 +336,64 @@ class GameScreen:
         
         self.sidebar.update()
         
-        # Tour de l'IA
-        if not self.chess_logic.is_game_over() and self._is_current_player_ai():
+        # --- Start of new AI move handling logic in update() ---
+        if self.is_ai_thinking and self.pending_ai_move_object is None: # AI is thinking, move not yet retrieved
+            move_from_ai = self.stockfish_adapter.get_completed_ai_move()
+            if move_from_ai is not None: # AI has finished thinking and returned a move
+                self.pending_ai_move_object = move_from_ai
+                self.ai_move_ready_to_apply_time = pygame.time.get_ticks()
+                # print(f"DEBUG: AI a retourné le coup: {move_from_ai}, en attente du délai de 1s.") # Optional
+            # Consider adding a timeout for AI thinking here if desired
+
+        # Check if a move is pending and the 1-second delay has passed
+        if self.pending_ai_move_object and \
+           self.ai_move_ready_to_apply_time is not None and \
+           (pygame.time.get_ticks() - self.ai_move_ready_to_apply_time >= 1000): # 1-second delay
+
+            ai_move_to_apply = self.pending_ai_move_object
+            
+            # Determine player name for logging based on board turn *before* applying AI move.
+            log_player_color_name = "Blancs" if self.chess_logic.get_board_state().turn == chess.WHITE else "Noirs"
+
+            if ai_move_to_apply:
+                # print(f"DEBUG: Application du coup IA: {ai_move_to_apply} par {log_player_color_name}") # Optional
+                is_capture = self.chess_logic.get_board_state().is_capture(ai_move_to_apply)
+                is_castling = self.chess_logic.get_board_state().is_castling(ai_move_to_apply)
+                is_promotion = ai_move_to_apply.promotion is not None
+
+                if self.chess_logic.apply_move(ai_move_to_apply):
+                    move_san = self.chess_logic.get_move_history_san()[-1]
+                    print(f"IA ({log_player_color_name}) joue: {move_san}")
+
+                    if is_promotion: config.play_sound("promote")
+                    elif is_castling: config.play_sound("castle")
+                    elif is_capture: config.play_sound("capture")
+                    else: config.play_sound("move_opponent")
+                    
+                    if self.chess_logic.is_in_check():
+                        config.play_sound("check")
+                    
+                    self.current_active_player_object = self.player_black if self.chess_logic.get_current_player_color() == chess.BLACK else self.player_white
+                    self.last_tick_time = pygame.time.get_ticks() 
+                    
+                    if self.stockfish_adapter and self.stockfish_adapter.engine:
+                        self.stockfish_adapter.start_analysis(self.chess_logic.get_board_state())
+                    self._check_game_end_condition()
+                else:
+                    print(f"ERREUR: L'IA ({log_player_color_name}) a tenté un coup illégal: {ai_move_to_apply}")
+            else: 
+                print(f"ERREUR: L'IA ({log_player_color_name}) n'a pas retourné de coup valide (pending_ai_move_object was None).")
+
+            self.is_ai_thinking = False
+            self.pending_ai_move_object = None
+            self.ai_move_ready_to_apply_time = None
+        # --- End of new AI move handling logic in update() ---
+        
+        # Tour de l'IA - initiate thinking if appropriate
+        if not self.chess_logic.is_game_over() and \
+           self._is_current_player_ai() and \
+           not self.is_ai_thinking and \
+           self.pending_ai_move_object is None:
             self._ai_play_move()
 
     def _draw_game_over_popup(self):
