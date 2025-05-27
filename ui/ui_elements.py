@@ -5,11 +5,12 @@ class Button:
     def __init__(self, x, y, width, height, text, action=None, 
                  font=None, 
                  color_normal=None, color_hover=None, color_text=None,
-                 border_radius=5):
+                 border_radius=5, enabled: bool = True): # Added enabled parameter
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self.action = action
         self.is_hovered = False
+        self.enabled = enabled # Store enabled state
 
         self.font = font if font else config.BUTTON_FONT
         self.color_normal = color_normal if color_normal else config.COLOR_BUTTON_NORMAL
@@ -24,6 +25,11 @@ class Button:
 
 
     def handle_event(self, event):
+        if not self.enabled:
+            if self.is_hovered: # Reset hover state if it was somehow set
+                self.is_hovered = False
+            return False
+
         if event.type == pygame.MOUSEMOTION:
             self.is_hovered = self.rect.collidepoint(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -34,11 +40,19 @@ class Button:
         return False
 
     def draw(self, screen):
-        color = self.color_hover if self.is_hovered else self.color_normal
-        pygame.draw.rect(screen, color, self.rect, border_radius=self.border_radius)
+        bg_color = self.color_normal
+        text_color = self.color_text
+
+        if not self.enabled:
+            bg_color = config.COLOR_BUTTON_DISABLED_BG
+            text_color = config.COLOR_BUTTON_DISABLED_TEXT
+        elif self.is_hovered: # Only show hover if enabled
+            bg_color = self.color_hover
+        
+        pygame.draw.rect(screen, bg_color, self.rect, border_radius=self.border_radius)
         
         if self.text:
-            text_surface = self.font.render(self.text, True, self.color_text)
+            text_surface = self.font.render(self.text, True, text_color)
             text_rect = text_surface.get_rect(center=self.rect.center)
             screen.blit(text_surface, text_rect)
 
