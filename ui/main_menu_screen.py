@@ -10,8 +10,38 @@ class MainMenuScreen:
         self.buttons = []
         self.labels = []
         self.option_selectors = {} # Dictionnaire pour stocker les sélecteurs
-
+        self.expert_mode_enabled = False # Default to False
+        self.expert_mode_button = None # Will be initialized in _setup_ui
+        
         self._setup_ui()
+
+    def _toggle_expert_mode(self):
+        self.expert_mode_enabled = not self.expert_mode_enabled
+        button_text_key = "expert_mode_enabled" if self.expert_mode_enabled else "expert_mode_disabled"
+        self.expert_mode_button.text = config.TEXT_LABELS[button_text_key]
+        # The button's draw method will use its text attribute.
+        self._enforce_player_type_rules()
+
+    def _enforce_player_type_rules(self):
+        # If expert mode is disabled, prevent AI vs AI
+        if not self.expert_mode_enabled:
+            white_is_ai = config.CURRENT_GAME_CONFIG["white_player_type"] == config.OPPONENT_AI_STOCKFISH
+            black_is_ai = config.CURRENT_GAME_CONFIG["black_player_type"] == config.OPPONENT_AI_STOCKFISH
+
+            if white_is_ai and black_is_ai:
+                # Revert Black player to Human
+                config.CURRENT_GAME_CONFIG["black_player_type"] = config.OPPONENT_HUMAN
+                if "black_player" in self.option_selectors:
+                    self.option_selectors["black_player"].set_selected_value(config.OPPONENT_HUMAN)
+                print("INFO: AI vs AI disabled. Black player set to Human.")
+        
+        # If expert mode is enabled, no restrictions.
+        # Update player selectors to reflect current config, this handles cases where expert mode is re-enabled
+        # or if the initial state needed adjustment.
+        if "white_player" in self.option_selectors:
+             self.option_selectors["white_player"].set_selected_value(config.CURRENT_GAME_CONFIG["white_player_type"])
+        if "black_player" in self.option_selectors:
+             self.option_selectors["black_player"].set_selected_value(config.CURRENT_GAME_CONFIG["black_player_type"])
 
     def _update_game_config(self, key, value):
         """Met à jour la configuration globale du jeu."""
@@ -32,8 +62,8 @@ class MainMenuScreen:
         current_y += 80
 
         # --- Configuration du Temps ---
-        self.labels.append(Label(center_x - 150, current_y + 20, "Temps (min):", anchor="topleft"))
-        time_options = [("3", 3), ("5", 5), ("10", 10), ("15", 15), ("0 (Infini)", 0)]
+        self.labels.append(Label(center_x - 250, current_y + 2, "Temps (min)", anchor="topleft"))
+        time_options = [("3", 3), ("5", 5), ("10", 10), ("15", 15), ("∞", 0)]
         time_selector = OptionSelector(
             center_x - 50, current_y, time_options,
             config.CURRENT_GAME_CONFIG["time_minutes"],
@@ -41,46 +71,67 @@ class MainMenuScreen:
             button_width=60, button_height=40, spacing=5
         )
         self.option_selectors["time"] = time_selector
-        current_y += 60
+        current_y += (40 + 30) # Element height (40) + gap (30)
 
         # --- Configuration Joueur Blanc ---
-        self.labels.append(Label(center_x - 150, current_y + 20, "Blancs:", anchor="topleft"))
+        self.labels.append(Label(center_x - 175, current_y + 2, "Blancs", anchor="topleft"))
         player_type_options = [("Humain", config.OPPONENT_HUMAN), ("IA (Stockfish)", config.OPPONENT_AI_STOCKFISH)]
         white_player_selector = OptionSelector(
             center_x - 50, current_y, player_type_options,
             config.CURRENT_GAME_CONFIG["white_player_type"],
-            on_select_action=lambda val: self._update_game_config("white_player_type", val),
+            on_select_action=lambda val: (self._update_game_config("white_player_type", val), self._enforce_player_type_rules()),
             button_width=150, button_height=40, spacing=10
         )
         self.option_selectors["white_player"] = white_player_selector
-        current_y += 60
+        current_y += (40 + 30) # Element height (40) + gap (30)
 
         # --- Configuration Joueur Noir ---
-        self.labels.append(Label(center_x - 150, current_y + 20, "Noirs:", anchor="topleft"))
+        self.labels.append(Label(center_x - 160, current_y + 2, "Noirs", anchor="topleft"))
         black_player_selector = OptionSelector(
             center_x - 50, current_y, player_type_options,
             config.CURRENT_GAME_CONFIG["black_player_type"],
-            on_select_action=lambda val: self._update_game_config("black_player_type", val),
+            on_select_action=lambda val: (self._update_game_config("black_player_type", val), self._enforce_player_type_rules()),
             button_width=150, button_height=40, spacing=10
         )
         self.option_selectors["black_player"] = black_player_selector
-        current_y += 80
+        current_y += (40 + 30) # Element height (40) + larger gap (40) before main actions
+
+        # --- Expert Mode Toggle ---
+        expert_mode_label_y = current_y + 2 # Adjust for centering with button
+        self.labels.append(Label(center_x - 250, expert_mode_label_y, config.TEXT_LABELS["expert_mode_label_short"], anchor="topleft"))
+        
+        initial_expert_button_text_key = "expert_mode_enabled" if self.expert_mode_enabled else "expert_mode_disabled"
+        self.expert_mode_button = Button(
+            center_x - 50, current_y, 270, 40, # Width for longer text like "AI vs AI: Activé (Risqué!)"
+            config.TEXT_LABELS[initial_expert_button_text_key],
+            action=self._toggle_expert_mode
+        )
+        self.buttons.append(self.expert_mode_button) # Add to general buttons list for event handling & drawing
+        current_y += (40 + 40) # Element height (40) + larger gap (40) before main actions
 
         # --- Boutons d'Action ---
         btn_width = 300
         btn_height = 60
-        btn_spacing = 20
+        btn_spacing = 25
 
+        # "Jouer" Button
         self.buttons.append(Button( (screen_width - btn_width) // 2, current_y, 
                                    btn_width, btn_height, "Jouer", action=self._start_game))
-        current_y += btn_height + btn_spacing
+        current_y += btn_height + btn_spacing # Add button height and spacing
 
+        # "Analyser PGN (Bientôt!)" Button
         self.buttons.append(Button( (screen_width - btn_width) // 2, current_y,
-                                   btn_width, btn_height, "Analyser PGN (Bientôt!)", action=self._analyze_pgn))
-        current_y += btn_height + btn_spacing
+                                   btn_width, btn_height, "Analyser PGN (Bientôt!)", 
+                                   action=self._analyze_pgn, enabled=False))
+        current_y += btn_height + btn_spacing # Add button height and spacing
         
+        # "Quitter" Button
         self.buttons.append(Button( (screen_width - btn_width) // 2, current_y,
                                    btn_width, btn_height, "Quitter", action=self._quit_game))
+        # current_y += btn_height # No increment needed after the last button unless more follows
+        
+        # Initial enforcement of player type rules
+        self._enforce_player_type_rules()
 
     def _start_game(self):
         # Vérifier si au moins un joueur est humain si l'autre est IA, ou les deux humains.

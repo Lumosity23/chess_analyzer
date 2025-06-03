@@ -54,6 +54,8 @@ COLOR_INFO_BG = pygame.Color(35, 33, 31) # Fond pour la zone d'info si on en fai
 COLOR_BUTTON_NORMAL = pygame.Color(70, 70, 70)
 COLOR_BUTTON_HOVER = pygame.Color(100, 100, 100)
 COLOR_BUTTON_TEXT = pygame.Color(220, 220, 220)
+COLOR_BUTTON_DISABLED_BG = pygame.Color(50, 50, 50)  # Dark grey for disabled button background
+COLOR_BUTTON_DISABLED_TEXT = pygame.Color(120, 120, 120) # Mid grey for disabled button text
 COLOR_SIDEBAR_BACKGROUND = pygame.Color(30, 28, 27) # Un peu plus clair que le fond général
 COLOR_MOVE_HISTORY_BG = pygame.Color(40, 38, 37)
 COLOR_MOVE_HISTORY_TEXT = pygame.Color(180, 180, 180)
@@ -76,7 +78,11 @@ BUTTON_FONT = None # Sera initialisé dans load_assets
 MOVE_HISTORY_FONT = None # Sera initialisé dans load_assets
 EVAL_BAR_WIDTH = 20 # Largeur de la barre de victoire verticale
 COORDINATE_FONT = None # Sera initialisé dans load_assets
-
+TEXT_LABELS = {
+    "expert_mode_label_short": "Mode Expert",
+    "expert_mode_disabled": "Mode Expert disable",
+    "expert_mode_enabled": "Mode Expert enable",
+}
 
 # --- Stockfish Configuration ---
 # Adapter le nom de l'exécutable si nécessaire
@@ -86,7 +92,7 @@ STOCKFISH_PATH = os.path.join(STOCKFISH_DIR, STOCKFISH_EXECUTABLE_NAME)
 
 # Paramètres pour l'analyse Stockfish (peuvent être ajustés)
 STOCKFISH_ANALYSIS_TIME_MS = 1000  # Temps d'analyse par coup en millisecondes (1 seconde)
-STOCKFISH_ANALYSIS_DEPTH = 15     # Profondeur d'analyse (alternative au temps)
+STOCKFISH_ANALYSIS_DEPTH = 25     # Profondeur d'analyse (alternative au temps)
 # On utilisera plutôt la limite de temps pour une réactivité constante.
 
 # --- Fonctions de Chargement des Assets ---

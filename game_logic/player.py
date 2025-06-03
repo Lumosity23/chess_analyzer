@@ -29,7 +29,7 @@ class Player:
         Retourne le temps restant formaté en 'MM:SS.d' (minutes:secondes.dixiemes).
         """
         if self.time_left_ms == float('inf'):
-            return "∞" # Or use "--:--" if preferred, but "∞" is more standard.
+            return "--:--" # Or use "--:--" if preferred, but "∞" is more standard.
         if self.is_timed_out:
             return "00:00.0"
 
