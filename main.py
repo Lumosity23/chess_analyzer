@@ -8,6 +8,20 @@ from ui.game_screen import GameScreen
 class MainApplication:
     def __init__(self):
         pygame.init()
+        # FONT TEST - Add these lines
+        print("--- FONT TEST ---")
+        font_path_to_test = "theme.json" # This MUST match theme.json
+        test_font_size = 30
+        try:
+            # Test loading by Pygame directly
+            test_font = pygame.font.Font(font_path_to_test, test_font_size)
+            print(f"SUCCESS: Pygame loaded font '{font_path_to_test}' at size {test_font_size}.")
+        except pygame.error as e:
+            print(f"PYGAME FONT LOAD ERROR: Could not load font '{font_path_to_test}'. Error: {e}")
+        except FileNotFoundError:
+            print(f"PYGAME FONT FILE NOT FOUND: Ensure '{font_path_to_test}' exists relative to main.py. Current working directory: {os.getcwd()}") # Added CWD
+        print("--- END FONT TEST ---")
+
         pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
         self.screen = pygame.display.set_mode((config.TOTAL_SCREEN_WIDTH, config.TOTAL_HEIGHT))
         pygame.display.set_caption("Jeu d'Échecs Python")
@@ -49,32 +63,35 @@ class MainApplication:
 
     def run(self):
         while self.running:
+            time_delta = self.clock.tick(config.FPS) / 1000.0 # Calculate time_delta
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
                 if self.active_screen:
-                    self.active_screen.handle_event(event)
+                    self.active_screen.handle_event(event) # Pass event to active screen
 
             if self.active_screen:
-                self.active_screen.update()
+                self.active_screen.update(time_delta) # Pass time_delta to active screen's update
             
             # Pop-up de fin de partie (géré ici pour être au-dessus de tout)
-            # Cette logique est un peu basique, un vrai système de pop-up serait mieux
-            if self.current_state == config.APP_STATE_IN_GAME and self.active_screen.chess_logic.is_game_over() and not self.active_screen.game_over_message_shown:
-                self.active_screen.show_game_over_popup() # Une méthode dans GameScreen
+            if self.current_state == config.APP_STATE_IN_GAME and \
+               hasattr(self.active_screen, 'chess_logic') and \
+               self.active_screen.chess_logic.is_game_over() and \
+               not self.active_screen.game_over_message_shown:
+                self.active_screen.show_game_over_popup()
 
             if self.active_screen:
-                self.active_screen.draw() # L'écran de jeu dessine son propre pop-up
+                self.active_screen.draw() 
             
             pygame.display.flip()
-            self.clock.tick(config.FPS)
         
-        # Nettoyage final si l'écran actif a une méthode on_exit
         if self.active_screen and hasattr(self.active_screen, 'on_exit') and callable(getattr(self.active_screen, 'on_exit')):
             print(f"INFO: Appel de on_exit final pour {type(self.active_screen).__name__}")
             self.active_screen.on_exit()
         
         pygame.quit()
+
 
 if __name__ == '__main__':
     app = MainApplication()

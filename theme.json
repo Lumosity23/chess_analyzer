@@ -1,0 +1,104 @@
+{
+    "defaults": {
+        "font": {
+            "name": "my_app_font", 
+            "size": "40",      
+            "regular_path": "data/fonts/FiraCode-Retina.ttf" 
+        }
+    },
+    "#file_dialog": {  
+        "font": {
+            "name": "my_dialog_font",
+            "size": "38", 
+            "regular_path": "data/fonts/FiraCode-Retina.ttf"
+        }
+    },
+    "#file_dialog.text_box": { 
+         "font": {
+            "name": "my_dialog_textbox_font",
+            "size": "36",
+            "regular_path": "data/fonts/FiraCode-Retina.ttf"
+        }
+    },
+    "#file_dialog .button": { 
+            "name": "my_dialog_button_font",
+            "size": "36",
+            "regular_path": "data/fonts/FiraCode-Retina.ttf"
+    },
+    "label": { 
+        "font": {
+            "name": "my_label_font",
+            "size": "38",
+            "regular_path": "data/fonts/FiraCode-Retina.ttf"
+        }
+    },
+    "#file_dialog.#title_bar": {
+        "colours": {
+            "normal_bg": "@defaults.dark_bg",
+            "normal_text": "@defaults.normal_text"
+        },
+        "font": {
+            "name": "@defaults.font.name",
+            "size": "40",
+            "bold_path": "@defaults.font.bold_path"
+        }
+    },
+    "#file_dialog #ok_button": {
+        "font": { "size": "36" }
+    },
+    "#file_dialog #cancel_button": {
+         "font": { "size": "36" }
+    },
+    "#file_dialog #file_list": {
+        "colours": {
+            "normal_bg": "@defaults.dark_bg",
+            "normal_text": "@defaults.normal_text",
+            "hover_bg": "@defaults.light_bg_hover", 
+            "selected_bg": "@defaults.selected_item_bg", 
+            "selected_text": "#FFFFFF" 
+        },
+        "font": {
+            "name": "@defaults.font.name",
+            "size": "30"
+        },
+        "list_item": {
+             "colours": {
+                "normal_bg": "@defaults.dark_bg",
+                "hover_bg": "@defaults.light_bg_hover",
+                "selected_bg": "@defaults.selected_item_bg",
+                "normal_text": "@defaults.normal_text",
+                "selected_text": "#FFFFFF"
+             }
+        }
+    },
+    "#file_dialog #parent_directory_button": { 
+        "misc": { "text": "⬆" }
+    },
+    "#file_dialog #home_button": {
+        "misc": { "text": "🏠" }
+    },
+    "#file_dialog #file_path_text_line": {
+        "colours": {
+            "normal_bg": "@defaults.dark_bg",
+            "normal_text": "@defaults.normal_text",
+            "selected_bg": "@defaults.border_color", 
+            "normal_border": "@defaults.border_color"
+        },
+        "font": {
+            "name": "@defaults.font.name",
+            "size": "30"
+        }
+    },
+    "#file_dialog #file_name_text_line": {
+         "colours": {
+            "normal_bg": "@defaults.dark_bg",
+            "normal_text": "@defaults.normal_text",
+            "selected_bg": "@defaults.border_color",
+            "normal_border": "@defaults.border_color"
+        },
+        "font": {
+            "name": "@defaults.font.name",
+            "size": "30"
+        }
+    }
+}

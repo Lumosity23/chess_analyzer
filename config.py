@@ -13,6 +13,7 @@ BOARD_X_OFFSET = EVAL_BAR_WIDTH # Le plateau commence après la barre d'évaluat
 SIDEBAR_WIDTH = 400 # Largeur de la barre latérale pour l'historique, Stockfish, etc.
 TOTAL_SCREEN_WIDTH = 1800
 TOTAL_HEIGHT = 1400 # Espace supplémentaire en bas pour des messages si pas de sidebar
+USE_THEME = True
 
 FPS = 60 # Taux de rafraîchissement du jeu
 

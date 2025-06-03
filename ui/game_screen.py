@@ -315,7 +315,7 @@ class GameScreen:
                 #     self.__init__(self.screen, self.game_config)
                 #     config.play_sound("game_start")
 
-    def update(self):
+    def update(self, time_delta):
         if self.chess_logic.is_game_over() or self.game_over_popup_active:
             # Pas de mise à jour de l'horloge ou de l'IA si la partie est finie ou popup actif
             self.sidebar.update() # La sidebar peut continuer à mettre à jour l'affichage de l'eval
@@ -397,6 +397,7 @@ class GameScreen:
            not self.is_ai_thinking and \
            self.pending_ai_move_object is None:
             self._ai_play_move()
+        pass
 
     def _draw_game_over_popup(self):
         popup_width, popup_height = 400, 200
